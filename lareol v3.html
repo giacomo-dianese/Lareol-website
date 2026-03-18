@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lareol — Soluzioni Digitali Complete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0d0d0d;
+    --white: #ffffff;
+    --off: #f7f6f4;
+    --gold: #c9a84c;
+    --gray: #6b6b6b;
+    --gray-light: #e4e4e4;
+    --border: #e2e2e2;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ════════════════════════════════
+     LOADER
+  ════════════════════════════════ */
+  #loader {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: flex-end;
+    pointer-events: none;
+  }
+  #loader-panel {
+    width: 100%; background: var(--black);
+    height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    transform: translateY(0);
+    transition: transform 1s cubic-bezier(.76,0,.24,1);
+  }
+  #loader-panel.out {
+    transform: translateY(-100%);
+  }
+  #loader-logo {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  #loader-logo.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  #loader-logo svg { width: 200px; }
+
+  /* ════════════════════════════════
+     CURSOR
+  ════════════════════════════════ */
+  .cursor {
+    width: 7px; height: 7px;
+    background: var(--gold); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: width .25s, height .25s, background .25s;
+  }
+  .cursor-ring {
+    width: 32px; height: 32px;
+    border: 1.5px solid rgba(201,168,76,.4); border-radius: 50%;
+    position: fixed; top: 0; left: 0;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%,-50%);
+    transition: left .1s ease, top .1s ease, width .3s, height .3s, border-color .3s;
+  }
+  body:has(a:hover) .cursor,
+  body:has(button:hover) .cursor { width: 12px; height: 12px; background: var(--black); }
+  body:has(a:hover) .cursor-ring,
+  body:has(button:hover) .cursor-ring { width: 48px; height: 48px; border-color: rgba(13,13,13,.18); }
+
+  /* ════════════════════════════════
+     NAV
+  ════════════════════════════════ */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 28px 60px;
+    transition: background .4s, padding .4s, box-shadow .4s;
+  }
+  nav.scrolled {
+    background: rgba(255,255,255,.94);
+    backdrop-filter: blur(20px);
+    padding: 16px 60px;
+    box-shadow: 0 1px 0 var(--border);
+  }
+  .nav-logo svg { width: 120px; height: auto; }
+  .nav-links { display: flex; gap: 36px; align-items: center; }
+  .nav-links a {
+    font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
+    text-decoration: none; color: var(--gray); transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--black); }
+  .nav-cta {
+    font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    padding: 11px 26px; background: var(--black);
+    color: var(--white) !important; text-decoration: none;
+    transition: background .25s !important;
+  }
+  .nav-cta:hover { background: var(--gold); }
+
+  /* ════════════════════════════════
+     HERO
+  ════════════════════════════════ */
+  #hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr auto;
+    padding: 140px 60px 80px;
+    position: relative; overflow: hidden;
+    background: var(--off);
+    gap: 0 60px;
+  }
+  /* decorative grid overlay */
+  .hero-grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(13,13,13,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13,13,13,.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 70% 80% at 80% 50%, black 20%, transparent 75%);
+  }
+  .hero-line-top { position: absolute; top: 0; left: 60px; right: 60px; height: 1px; background: var(--border); z-index:1; }
+
+  /* left column: label + title */
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+    grid-column: 1; grid-row: 1;
+    position: relative; z-index: 1;
+  }
+  .hero-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 28px;
+    opacity: 0; animation: fadeUp .7s .2s forwards;
+  }
+  .hero-title {
+    font-size: clamp(52px, 7.5vw, 130px); font-weight: 800; line-height: .92;
+    letter-spacing: -.04em; color: var(--black);
+    opacity: 0; animation: fadeUp .85s .4s forwards;
+  }
+  .hero-title em { font-style: normal; color: var(--gold); }
+
+  /* right column: video */
+  .hero-right {
+    grid-column: 2; grid-row: 1;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    opacity: 0; animation: fadeUp .8s .6s forwards;
+  }
+  .hero-video-wrap {
+    width: 100%; aspect-ratio: 16/9;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,.1);
+  }
+  .hero-video-wrap iframe {
+    width: 100%; height: 100%;
+    border: none; display: block;
+  }
+
+  /* bottom row: desc + badge */
+  .hero-bottom {
+    grid-column: 1 / -1; grid-row: 2;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding-top: 52px;
+    position: relative; z-index: 1;
+    opacity: 0; animation: fadeUp .75s .75s forwards;
+  }
+  .hero-desc { max-width: 480px; font-size: 16px; font-weight: 400; line-height: 1.7; color: var(--gray); }
+  .hero-desc strong { font-weight: 600; color: var(--black); }
+
+  /* rotating badge - desktop only */
+  .hero-badge {
+    width: 100px; height: 100px;
+    border: 1px solid var(--border); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    animation: spin 20s linear infinite;
+  }
+  .hero-badge svg { position: absolute; }
+  .hero-badge-dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* scroll link - mobile only, hidden on desktop */
+  .hero-scroll-mobile {
+    display: none;
+    font-size: 10px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--gray); flex-direction: column; align-items: center; gap: 10px; text-decoration: none;
+  }
+  .hero-scroll-line {
+    width: 1px; height: 44px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: linePulse 2s ease-in-out infinite;
+  }
+  @keyframes linePulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
+
+  /* ════════════════════════════════
+     MARQUEE
+  ════════════════════════════════ */
+  .marquee-wrap {
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    overflow: hidden; padding: 18px 0; background: var(--white);
+  }
+  .marquee-track {
+    display: flex; gap: 56px; white-space: nowrap;
+    animation: marquee 24s linear infinite; width: max-content;
+  }
+  .marquee-item {
+    font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--gray); display: flex; align-items: center; gap: 56px;
+  }
+  .marquee-item::after { content: '\2736'; color: var(--gold); font-size: 10px; }
+  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* ════════════════════════════════
+     SHARED SECTION STYLES
+  ════════════════════════════════ */
+  section { padding: 120px 60px; }
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 14px;
+  }
+  .section-label::after { content: ''; width: 40px; height: 1px; background: var(--gold); opacity: .5; }
+  .section-title { font-size: clamp(44px, 6vw, 88px); font-weight: 800; line-height: .92; letter-spacing: -.03em; }
+
+  /* ════════════════════════════════
+     SERVIZI
+  ════════════════════════════════ */
+  #servizi { border-top: 1px solid var(--border); background: var(--white); }
+  .servizi-header { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-bottom: 72px; align-items: end; }
+  .servizi-intro { font-size: 16px; font-weight: 400; line-height: 1.75; color: var(--gray); }
+  .servizi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+
+  /* Gentle hover: thin gold top border slides in + subtle bg tint + title shifts */
+  .servizio-card {
+    background: var(--white); padding: 48px 40px 52px;
+    position: relative; overflow: hidden; cursor: none;
+    transition: background .3s;
+  }
+  .servizio-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .4s cubic-bezier(.4,0,.2,1);
+  }
+  .servizio-card:hover { background: #fdfcf9; }
+  .servizio-card:hover::after { transform: scaleX(1); }
+  .servizio-num {
+    font-size: 10px; font-weight: 700; letter-spacing: .2em; color: var(--gold);
+    display: block; margin-bottom: 40px;
+  }
+  .servizio-title {
+    font-size: 22px; font-weight: 700; line-height: 1.15; color: var(--black);
+    margin-bottom: 14px;
+    transition: transform .3s ease;
+  }
+  .servizio-card:hover .servizio-title { transform: translateX(4px); }
+  .servizio-desc {
+    font-size: 13.5px; font-weight: 400; line-height: 1.7; color: var(--gray);
+  }
+
+  /* ════════════════════════════════
+     NUMERI
+  ════════════════════════════════ */
+  #numeri { background: var(--black); border-top: none; }
+  #numeri .section-label { color: rgba(201,168,76,.85); }
+  #numeri .section-label::after { background: rgba(201,168,76,.4); }
+  #numeri .section-title { color: var(--white); }
+  .numeri-grid {
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 1px; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.06); margin-top: 72px;
+  }
+  .numero-item {
+    background: var(--black); padding: 52px 36px;
+    position: relative; overflow: hidden;
+  }
+  .numero-item::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: var(--gold); transform: scaleX(0); transform-origin: left;
+    transition: transform .45s ease;
+  }
+  .numero-item:hover::after { transform: scaleX(1); }
+  .numero-val { font-size: clamp(36px, 4.5vw, 68px); font-weight: 800; line-height: 1; color: var(--white); letter-spacing: -.04em; }
+  .numero-val em { font-style: normal; color: var(--gold); }
+  .numero-label { font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.38); margin-top: 14px; }
+
+  /* ════════════════════════════════
+     PROCESSO
+  ════════════════════════════════ */
+  #approccio { border-top: 1px solid var(--border); background: var(--off); }
+  .process-header { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-bottom: 72px; align-items: end; }
+  .process-intro { font-size: 16px; font-weight: 400; line-height: 1.75; color: var(--gray); }
+  .process-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  .process-card {
+    background: var(--off); padding: 44px 36px 48px;
+    position: relative; overflow: hidden; cursor: none;
+    transition: background .3s, transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s;
+  }
+  .process-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--gold); transform: scaleY(0); transform-origin: bottom;
+    transition: transform .4s cubic-bezier(.4,0,.2,1);
+  }
+  .process-card:hover { background: var(--white); transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0,0,0,.07); z-index: 2; }
+  .process-card:hover::before { transform: scaleY(1); }
+  .process-card-n {
+    font-size: 56px; font-weight: 900; line-height: 1; letter-spacing: -.04em;
+    color: var(--gray-light); margin-bottom: 24px;
+    transition: color .3s, transform .35s;
+  }
+  .process-card:hover .process-card-n { color: var(--gold); transform: scale(1.06) translateX(4px); }
+  .process-card-name { font-size: 18px; font-weight: 700; line-height: 1.2; color: var(--black); margin-bottom: 12px; }
+  .process-card-desc { font-size: 13.5px; font-weight: 400; line-height: 1.7; color: var(--gray); }
+
+  /* ════════════════════════════════
+     CONTATTI
+  ════════════════════════════════ */
+  #contatti { background: var(--white); border-top: 1px solid var(--border); }
+  .contatti-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; margin-top: 72px; align-items: start; }
+  .contatti-desc { font-size: 17px; font-weight: 400; line-height: 1.75; color: var(--gray); margin-bottom: 52px; }
+  .contact-detail { display: flex; gap: 20px; align-items: baseline; margin-bottom: 24px; }
+  .contact-detail-label { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--gray); width: 72px; flex-shrink: 0; }
+  .contact-detail-val { font-size: 15px; font-weight: 500; color: var(--black); text-decoration: none; border-bottom: 1px solid var(--border); padding-bottom: 2px; transition: border-color .25s, color .25s; }
+  .contact-detail-val:hover { border-color: var(--gold); color: var(--gold); }
+  .form-group { margin-bottom: 28px; }
+  .form-group label { display: block; font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--gray); margin-bottom: 10px; }
+  .form-group input, .form-group textarea {
+    width: 100%; background: transparent; border: none; border-bottom: 1.5px solid var(--border);
+    padding: 12px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 400;
+    color: var(--black); outline: none; transition: border-color .25s;
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--gold); }
+  .form-group textarea { resize: none; height: 80px; }
+  .form-submit {
+    margin-top: 36px; display: flex; align-items: center; justify-content: center;
+    width: 100%; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase;
+    background: var(--black); color: var(--white); border: none; padding: 20px 40px;
+    cursor: none; position: relative; overflow: hidden;
+  }
+  .form-submit::after {
+    content: ''; position: absolute; inset: 0; background: var(--gold);
+    transform: translateX(-100%); transition: transform .4s cubic-bezier(.4,0,.2,1);
+  }
+  .form-submit:hover::after { transform: translateX(0); }
+  .form-submit span { position: relative; z-index: 1; }
+
+  /* ════════════════════════════════
+     FOOTER
+  ════════════════════════════════ */
+  footer {
+    background: var(--black); padding: 72px 60px 0;
+    display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 60px; align-items: start;
+  }
+  .footer-logo svg { width: 110px; }
+  .footer-tagline { font-size: 13px; font-weight: 400; color: rgba(255,255,255,.32); margin-top: 16px; line-height: 1.7; }
+  .footer-col-title { font-size: 10px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 10px; }
+  .footer-links a { font-size: 14px; font-weight: 400; color: rgba(255,255,255,.38); text-decoration: none; transition: color .25s; }
+  .footer-links a:hover { color: var(--white); }
+  .footer-bottom {
+    grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,.07);
+    margin: 40px -60px 0; padding: 24px 60px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-copy { font-size: 11px; font-weight: 400; letter-spacing: .06em; color: rgba(255,255,255,.22); }
+  .footer-social { display: flex; gap: 20px; }
+  .footer-social a { font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.22); text-decoration: none; transition: color .25s; }
+  .footer-social a:hover { color: var(--gold); }
+
+  /* ════════════════════════════════
+     REVEAL
+  ════════════════════════════════ */
+  .reveal { opacity:0; transform:translateY(32px); transition:opacity .75s ease, transform .75s ease; }
+  .reveal.visible { opacity:1; transform:none; }
+  .reveal-delay-1 { transition-delay:.1s; }
+  .reveal-delay-2 { transition-delay:.2s; }
+  .reveal-delay-3 { transition-delay:.3s; }
+  .reveal-delay-4 { transition-delay:.4s; }
+  .reveal-delay-5 { transition-delay:.5s; }
+
+  /* ════════════════════════════════
+     MOBILE
+  ════════════════════════════════ */
+  @media (max-width: 900px) {
+    nav { padding: 20px 24px; }
+    nav.scrolled { padding: 14px 24px; }
+    .nav-links { display: none; }
+
+    /* hero stacks vertically */
+    #hero {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      padding: 120px 24px 64px;
+      gap: 0;
+    }
+    .hero-left { grid-column: 1; grid-row: 1; justify-content: flex-start; padding-bottom: 40px; }
+    .hero-right { grid-column: 1; grid-row: 2; padding-bottom: 40px; }
+    .hero-bottom { grid-column: 1; grid-row: 3; flex-direction: column; align-items: flex-start; gap: 32px; padding-top: 0; }
+    .hero-badge { display: none; }
+    .hero-scroll-mobile { display: flex; }
+    .hero-grid-bg { mask-image: radial-gradient(ellipse 80% 60% at 80% 30%, black 10%, transparent 70%); }
+
+    section { padding: 80px 24px; }
+    .servizi-header, .process-header, .contatti-inner { grid-template-columns: 1fr; }
+    .servizi-grid, .process-grid { grid-template-columns: 1fr; }
+
+    /* numeri: 2 cols, smaller numbers */
+    .numeri-grid { grid-template-columns: repeat(2,1fr); }
+    .numero-item { padding: 36px 24px; }
+    .numero-val { font-size: 40px; }
+    .numero-label { font-size: 10px; }
+
+    footer { grid-template-columns: 1fr; padding: 48px 24px 0; gap: 36px; }
+    .footer-bottom { margin: 40px -24px 0; padding: 20px 24px; flex-direction: column; gap: 10px; }
+  }
+
+  @media (max-width: 600px) {
+    .hero-title { font-size: clamp(48px, 13vw, 80px); }
+    .numero-val { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     LOADER
+════════════════════════════════════ -->
+<div id="loader">
+  <div id="loader-panel">
+    <div id="loader-logo">
+      <svg width="530" height="218" viewBox="0 0 530 218" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.4375 174V43.0909H43.9773V145.364H96.9034V174H8.4375ZM133.739 175.534C127.475 175.534 121.935 174.511 117.12 172.466C112.347 170.378 108.597 167.224 105.87 163.006C103.142 158.787 101.779 153.418 101.779 146.898C101.779 141.528 102.695 136.947 104.527 133.155C106.36 129.32 108.916 126.188 112.198 123.759C115.479 121.33 119.293 119.476 123.639 118.197C128.029 116.919 132.759 116.088 137.83 115.705C143.327 115.278 147.737 114.767 151.061 114.17C154.428 113.531 156.857 112.658 158.348 111.55C159.84 110.399 160.585 108.886 160.585 107.011V106.756C160.585 104.199 159.605 102.239 157.645 100.875C155.685 99.5114 153.171 98.8295 150.102 98.8295C146.736 98.8295 143.987 99.5753 141.857 101.067C139.769 102.516 138.512 104.753 138.085 107.778H105.614C106.04 101.812 107.936 96.3153 111.303 91.2869C114.712 86.2159 119.676 82.1676 126.196 79.142C132.716 76.0739 140.855 74.5398 150.614 74.5398C157.645 74.5398 163.952 75.3707 169.534 77.0327C175.117 78.652 179.868 80.9318 183.789 83.8722C187.709 86.7699 190.692 90.179 192.737 94.0994C194.825 97.9773 195.87 102.196 195.87 106.756V174H162.887V160.193H162.12C160.159 163.858 157.773 166.82 154.96 169.078C152.191 171.337 149.016 172.977 145.436 174C141.899 175.023 138 175.534 133.739 175.534ZM145.245 153.29C147.929 153.29 150.443 152.736 152.787 151.628C155.174 150.52 157.112 148.922 158.604 146.834C160.095 144.746 160.841 142.21 160.841 139.227V131.045C159.904 131.429 158.902 131.791 157.837 132.132C156.814 132.473 155.706 132.793 154.513 133.091C153.362 133.389 152.127 133.666 150.806 133.922C149.527 134.178 148.185 134.412 146.779 134.625C144.051 135.051 141.814 135.754 140.067 136.734C138.362 137.672 137.084 138.844 136.232 140.25C135.422 141.614 135.017 143.148 135.017 144.852C135.017 147.58 135.976 149.668 137.894 151.116C139.811 152.565 142.262 153.29 145.245 153.29ZM207.329 174V75.8182H241.59V94.483H242.613C244.402 87.5795 247.236 82.5298 251.114 79.3338C255.035 76.1378 259.615 74.5398 264.857 74.5398C266.391 74.5398 267.904 74.6676 269.395 74.9233C270.929 75.1364 272.4 75.456 273.806 75.8821V105.989C272.059 105.392 269.907 104.945 267.35 104.646C264.793 104.348 262.598 104.199 260.766 104.199C257.314 104.199 254.204 104.987 251.434 106.564C248.706 108.098 246.554 110.271 244.978 113.084C243.401 115.854 242.613 119.114 242.613 122.864V174H207.329ZM321.396 175.79C310.913 175.79 301.879 173.787 294.294 169.781C286.751 165.733 280.934 159.937 276.843 152.395C272.795 144.81 270.771 135.733 270.771 125.165C270.771 115.023 272.816 106.159 276.907 98.5739C280.998 90.9886 286.772 85.0866 294.23 80.8679C301.687 76.6491 310.487 74.5398 320.629 74.5398C328.044 74.5398 334.755 75.6903 340.764 77.9915C346.772 80.2926 351.907 83.6378 356.169 88.027C360.43 92.3736 363.711 97.6577 366.012 103.879C368.313 110.101 369.464 117.111 369.464 124.909V133.091H281.765V113.659H336.992C336.95 110.847 336.225 108.375 334.819 106.244C333.456 104.071 331.602 102.388 329.258 101.195C326.957 99.9588 324.336 99.3409 321.396 99.3409C318.541 99.3409 315.92 99.9588 313.534 101.195C311.147 102.388 309.23 104.05 307.781 106.18C306.375 108.311 305.629 110.804 305.544 113.659V134.625C305.544 137.778 306.204 140.591 307.525 143.062C308.846 145.534 310.742 147.473 313.214 148.879C315.686 150.286 318.669 150.989 322.163 150.989C324.592 150.989 326.808 150.648 328.811 149.966C330.856 149.284 332.603 148.304 334.052 147.026C335.501 145.705 336.566 144.128 337.248 142.295H369.464C368.356 149.114 365.735 155.037 361.602 160.065C357.468 165.051 351.992 168.929 345.174 171.699C338.399 174.426 330.473 175.79 321.396 175.79ZM425.763 175.79C415.11 175.79 405.991 173.68 398.405 169.462C390.82 165.2 385.003 159.277 380.955 151.692C376.907 144.064 374.883 135.222 374.883 125.165C374.883 115.108 376.907 106.287 380.955 98.7017C385.003 91.0739 390.82 85.1506 398.405 80.9318C405.991 76.6705 415.11 74.5398 425.763 74.5398C436.417 74.5398 445.536 76.6705 453.121 80.9318C460.706 85.1506 466.523 91.0739 470.572 98.7017C474.62 106.287 476.644 115.108 476.644 125.165C476.644 135.222 474.62 144.064 470.572 151.692C466.523 159.277 460.706 165.2 453.121 169.462C445.536 173.68 436.417 175.79 425.763 175.79ZM426.019 149.71C429.002 149.71 431.58 148.709 433.753 146.706C435.927 144.703 437.61 141.848 438.803 138.141C439.996 134.433 440.593 130.023 440.593 124.909C440.593 119.753 439.996 115.342 438.803 111.678C437.61 107.97 435.927 105.115 433.753 103.112C431.58 101.109 429.002 100.108 426.019 100.108C422.866 100.108 420.16 101.109 417.901 103.112C415.643 105.115 413.917 107.97 412.724 111.678C411.53 115.342 410.934 119.753 410.934 124.909C410.934 130.023 411.53 134.433 412.724 138.141C413.917 141.848 415.643 144.703 417.901 146.706C420.16 148.709 422.866 149.71 426.019 149.71ZM520.846 43.0909V174H485.562V43.0909H520.846Z" fill="#f2ede8"/>
+        <line x1="8.54102" y1="198.226" x2="272.447" y2="198.226" stroke="#f2ede8" stroke-width="8"/>
+        <line x1="256.932" y1="44.2263" x2="520.838" y2="44.2263" stroke="#f2ede8" stroke-width="8"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ═══════════════════════════════════
+     NAV
+════════════════════════════════════ -->
+<nav id="nav">
+  <a class="nav-logo" href="#">
+    <svg width="530" height="218" viewBox="0 0 530 218" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8.4375 174V43.0909H43.9773V145.364H96.9034V174H8.4375ZM133.739 175.534C127.475 175.534 121.935 174.511 117.12 172.466C112.347 170.378 108.597 167.224 105.87 163.006C103.142 158.787 101.779 153.418 101.779 146.898C101.779 141.528 102.695 136.947 104.527 133.155C106.36 129.32 108.916 126.188 112.198 123.759C115.479 121.33 119.293 119.476 123.639 118.197C128.029 116.919 132.759 116.088 137.83 115.705C143.327 115.278 147.737 114.767 151.061 114.17C154.428 113.531 156.857 112.658 158.348 111.55C159.84 110.399 160.585 108.886 160.585 107.011V106.756C160.585 104.199 159.605 102.239 157.645 100.875C155.685 99.5114 153.171 98.8295 150.102 98.8295C146.736 98.8295 143.987 99.5753 141.857 101.067C139.769 102.516 138.512 104.753 138.085 107.778H105.614C106.04 101.812 107.936 96.3153 111.303 91.2869C114.712 86.2159 119.676 82.1676 126.196 79.142C132.716 76.0739 140.855 74.5398 150.614 74.5398C157.645 74.5398 163.952 75.3707 169.534 77.0327C175.117 78.652 179.868 80.9318 183.789 83.8722C187.709 86.7699 190.692 90.179 192.737 94.0994C194.825 97.9773 195.87 102.196 195.87 106.756V174H162.887V160.193H162.12C160.159 163.858 157.773 166.82 154.96 169.078C152.191 171.337 149.016 172.977 145.436 174C141.899 175.023 138 175.534 133.739 175.534ZM145.245 153.29C147.929 153.29 150.443 152.736 152.787 151.628C155.174 150.52 157.112 148.922 158.604 146.834C160.095 144.746 160.841 142.21 160.841 139.227V131.045C159.904 131.429 158.902 131.791 157.837 132.132C156.814 132.473 155.706 132.793 154.513 133.091C153.362 133.389 152.127 133.666 150.806 133.922C149.527 134.178 148.185 134.412 146.779 134.625C144.051 135.051 141.814 135.754 140.067 136.734C138.362 137.672 137.084 138.844 136.232 140.25C135.422 141.614 135.017 143.148 135.017 144.852C135.017 147.58 135.976 149.668 137.894 151.116C139.811 152.565 142.262 153.29 145.245 153.29ZM207.329 174V75.8182H241.59V94.483H242.613C244.402 87.5795 247.236 82.5298 251.114 79.3338C255.035 76.1378 259.615 74.5398 264.857 74.5398C266.391 74.5398 267.904 74.6676 269.395 74.9233C270.929 75.1364 272.4 75.456 273.806 75.8821V105.989C272.059 105.392 269.907 104.945 267.35 104.646C264.793 104.348 262.598 104.199 260.766 104.199C257.314 104.199 254.204 104.987 251.434 106.564C248.706 108.098 246.554 110.271 244.978 113.084C243.401 115.854 242.613 119.114 242.613 122.864V174H207.329ZM321.396 175.79C310.913 175.79 301.879 173.787 294.294 169.781C286.751 165.733 280.934 159.937 276.843 152.395C272.795 144.81 270.771 135.733 270.771 125.165C270.771 115.023 272.816 106.159 276.907 98.5739C280.998 90.9886 286.772 85.0866 294.23 80.8679C301.687 76.6491 310.487 74.5398 320.629 74.5398C328.044 74.5398 334.755 75.6903 340.764 77.9915C346.772 80.2926 351.907 83.6378 356.169 88.027C360.43 92.3736 363.711 97.6577 366.012 103.879C368.313 110.101 369.464 117.111 369.464 124.909V133.091H281.765V113.659H336.992C336.95 110.847 336.225 108.375 334.819 106.244C333.456 104.071 331.602 102.388 329.258 101.195C326.957 99.9588 324.336 99.3409 321.396 99.3409C318.541 99.3409 315.92 99.9588 313.534 101.195C311.147 102.388 309.23 104.05 307.781 106.18C306.375 108.311 305.629 110.804 305.544 113.659V134.625C305.544 137.778 306.204 140.591 307.525 143.062C308.846 145.534 310.742 147.473 313.214 148.879C315.686 150.286 318.669 150.989 322.163 150.989C324.592 150.989 326.808 150.648 328.811 149.966C330.856 149.284 332.603 148.304 334.052 147.026C335.501 145.705 336.566 144.128 337.248 142.295H369.464C368.356 149.114 365.735 155.037 361.602 160.065C357.468 165.051 351.992 168.929 345.174 171.699C338.399 174.426 330.473 175.79 321.396 175.79ZM425.763 175.79C415.11 175.79 405.991 173.68 398.405 169.462C390.82 165.2 385.003 159.277 380.955 151.692C376.907 144.064 374.883 135.222 374.883 125.165C374.883 115.108 376.907 106.287 380.955 98.7017C385.003 91.0739 390.82 85.1506 398.405 80.9318C405.991 76.6705 415.11 74.5398 425.763 74.5398C436.417 74.5398 445.536 76.6705 453.121 80.9318C460.706 85.1506 466.523 91.0739 470.572 98.7017C474.62 106.287 476.644 115.108 476.644 125.165C476.644 135.222 474.62 144.064 470.572 151.692C466.523 159.277 460.706 165.2 453.121 169.462C445.536 173.68 436.417 175.79 425.763 175.79ZM426.019 149.71C429.002 149.71 431.58 148.709 433.753 146.706C435.927 144.703 437.61 141.848 438.803 138.141C439.996 134.433 440.593 130.023 440.593 124.909C440.593 119.753 439.996 115.342 438.803 111.678C437.61 107.97 435.927 105.115 433.753 103.112C431.58 101.109 429.002 100.108 426.019 100.108C422.866 100.108 420.16 101.109 417.901 103.112C415.643 105.115 413.917 107.97 412.724 111.678C411.53 115.342 410.934 119.753 410.934 124.909C410.934 130.023 411.53 134.433 412.724 138.141C413.917 141.848 415.643 144.703 417.901 146.706C420.16 148.709 422.866 149.71 426.019 149.71ZM520.846 43.0909V174H485.562V43.0909H520.846Z" fill="#0d0d0d"/>
+      <line x1="8.54102" y1="198.226" x2="272.447" y2="198.226" stroke="#0d0d0d" stroke-width="8"/>
+      <line x1="256.932" y1="44.2263" x2="520.838" y2="44.2263" stroke="#0d0d0d" stroke-width="8"/>
+    </svg>
+  </a>
+  <div class="nav-links">
+    <a href="#servizi">Servizi</a>
+    <a href="#approccio">Metodo</a>
+    <a href="#numeri">Risultati</a>
+    <a href="#contatti" class="nav-cta">Contattaci</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════
+     HERO
+════════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-line-top"></div>
+
+  <div class="hero-left">
+    <p class="hero-label">Agenzia di soluzioni digitali</p>
+    <h1 class="hero-title">
+      Crescita<br><em>Digitale</em><br>Reale.
+    </h1>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-video-wrap">
+      <!-- Replace VIDEO_ID with your actual YouTube video ID -->
+      <iframe
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0&modestbranding=1&color=white"
+        title="Lareol Showreel"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </div>
+
+  <div class="hero-bottom">
+    <p class="hero-desc">
+      Trasformiamo la tua presenza online in un <strong>sistema di acquisizione clienti</strong>. Social media, advertising multicanale, produzione video e siti web progettati per convertire.
+    </p>
+    <!-- Desktop: rotating badge -->
+    <div class="hero-badge">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <path id="cp" d="M 50,50 m -32,0 a 32,32 0 1,1 64,0 a 32,32 0 1,1 -64,0" fill="none"/>
+        <text font-size="9" font-family="Inter" font-weight="600" letter-spacing="3.8" fill="rgba(13,13,13,0.35)">
+          <textPath href="#cp">LAREOL   DIGITAL AGENCY   </textPath>
+        </text>
+      </svg>
+      <div class="hero-badge-dot"></div>
+    </div>
+    <!-- Mobile: scroll link -->
+    <a href="#servizi" class="hero-scroll-mobile">
+      <span>Scopri</span>
+      <div class="hero-scroll-line"></div>
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     MARQUEE
+════════════════════════════════════ -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span class="marquee-item">Social Media Marketing</span>
+    <span class="marquee-item">Google Ads</span>
+    <span class="marquee-item">Meta Ads</span>
+    <span class="marquee-item">Produzione Video</span>
+    <span class="marquee-item">Fotografia</span>
+    <span class="marquee-item">Siti Web</span>
+    <span class="marquee-item">Email Marketing</span>
+    <span class="marquee-item">Analisi Dati</span>
+    <span class="marquee-item">Social Media Marketing</span>
+    <span class="marquee-item">Google Ads</span>
+    <span class="marquee-item">Meta Ads</span>
+    <span class="marquee-item">Produzione Video</span>
+    <span class="marquee-item">Fotografia</span>
+    <span class="marquee-item">Siti Web</span>
+    <span class="marquee-item">Email Marketing</span>
+    <span class="marquee-item">Analisi Dati</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SERVIZI
+════════════════════════════════════ -->
+<section id="servizi">
+  <div class="servizi-header">
+    <div>
+      <div class="section-label reveal">Cosa facciamo</div>
+      <h2 class="section-title reveal reveal-delay-1">I nostri<br>servizi</h2>
+    </div>
+    <p class="servizi-intro reveal reveal-delay-2">Siamo specialisti del marketing digitale. Portiamo visibilità, costruiamo sistemi di acquisizione clienti e creiamo contenuti che convertono, su misura per ogni azienda.</p>
+  </div>
+  <div class="servizi-grid">
+    <div class="servizio-card reveal">
+      <span class="servizio-num">01</span>
+      <div class="servizio-title">Social Media<br>Marketing</div>
+      <p class="servizio-desc">Strategia editoriale, contenuti creativi e community management per costruire un pubblico fedele e aumentare la visibilità del tuo brand.</p>
+    </div>
+    <div class="servizio-card reveal reveal-delay-1">
+      <span class="servizio-num">02</span>
+      <div class="servizio-title">Media Buying<br>Multicanale</div>
+      <p class="servizio-desc">Campagne su Google Ads e Meta Ads ottimizzate per il ROAS. Acquisizione di contatti qualificati attraverso advertising data-driven.</p>
+    </div>
+    <div class="servizio-card reveal reveal-delay-2">
+      <span class="servizio-num">03</span>
+      <div class="servizio-title">Produzione<br>Video e Foto</div>
+      <p class="servizio-desc">Shooting fotografici e video professionali per advertising, social e web. Contenuti visivi ad alto impatto che comunicano il valore del tuo brand.</p>
+    </div>
+    <div class="servizio-card reveal">
+      <span class="servizio-num">04</span>
+      <div class="servizio-title">Siti Web<br>Convertenti</div>
+      <p class="servizio-desc">Siti web e landing page pensati per posizionarsi sui motori di ricerca e trasformare i visitatori in clienti reali. SEO, design e performance.</p>
+    </div>
+    <div class="servizio-card reveal reveal-delay-1">
+      <span class="servizio-num">05</span>
+      <div class="servizio-title">Email<br>Marketing</div>
+      <p class="servizio-desc">Sequenze email personalizzate e automazioni per nutrire i lead, fidelizzare i clienti e portare vendite ricorrenti alla tua azienda.</p>
+    </div>
+    <div class="servizio-card reveal reveal-delay-2">
+      <span class="servizio-num">06</span>
+      <div class="servizio-title">Analisi<br>Dati</div>
+      <p class="servizio-desc">Dashboard e report personalizzati per capire cosa funziona, ottimizzare le campagne attive e prendere decisioni basate su dati concreti.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     NUMERI
+════════════════════════════════════ -->
+<section id="numeri">
+  <div class="section-label reveal">In numeri</div>
+  <h2 class="section-title reveal reveal-delay-1">Risultati<br>concreti</h2>
+  <div class="numeri-grid">
+    <div class="numero-item reveal">
+      <div class="numero-val">+<em>3M</em></div>
+      <div class="numero-label">Impression generate</div>
+    </div>
+    <div class="numero-item reveal reveal-delay-1">
+      <div class="numero-val">+<em>40</em></div>
+      <div class="numero-label">Clienti soddisfatti</div>
+    </div>
+    <div class="numero-item reveal reveal-delay-2">
+      <div class="numero-val">+<em>250</em></div>
+      <div class="numero-label">Lead generate</div>
+    </div>
+    <div class="numero-item reveal reveal-delay-3">
+      <div class="numero-val"><em>5,3x</em></div>
+      <div class="numero-label">ROAS medio campagne</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     COME LAVORIAMO
+════════════════════════════════════ -->
+<section id="approccio">
+  <div class="process-header">
+    <div>
+      <div class="section-label reveal">Il nostro metodo</div>
+      <h2 class="section-title reveal reveal-delay-1">Come<br>lavoriamo</h2>
+    </div>
+    <p class="process-intro reveal reveal-delay-2">Un processo strutturato e ripetibile, costruito su sei fasi interdipendenti. Dalla ricerca iniziale all'ottimizzazione continua: ogni step alimenta il successivo.</p>
+  </div>
+  <div class="process-grid">
+    <div class="process-card reveal">
+      <div class="process-card-n">01</div>
+      <div class="process-card-name">Ricerca e analisi</div>
+      <p class="process-card-desc">Studiamo il tuo mercato, i tuoi concorrenti e soprattutto i desideri profondi dei tuoi clienti ideali. Non supposizioni: dati concreti.</p>
+    </div>
+    <div class="process-card reveal reveal-delay-1">
+      <div class="process-card-n">02</div>
+      <div class="process-card-name">Strategia su misura</div>
+      <p class="process-card-desc">Come un sarto con un abito, costruiamo la strategia giusta per i tuoi obiettivi: visibilità, acquisizione contatti o vendite dirette.</p>
+    </div>
+    <div class="process-card reveal reveal-delay-2">
+      <div class="process-card-n">03</div>
+      <div class="process-card-name">Creazione di contenuti</div>
+      <p class="process-card-desc">Video, foto e copy ad alto impatto, pensati per far parte di un sistema di marketing integrato che parla direttamente al tuo pubblico.</p>
+    </div>
+    <div class="process-card reveal">
+      <div class="process-card-n">04</div>
+      <div class="process-card-name">Campagne multicanale</div>
+      <p class="process-card-desc">Le tue pubblicità raggiungono chi è realmente interessato, trasformando l'attenzione in contatti qualificati e opportunità di vendita concrete.</p>
+    </div>
+    <div class="process-card reveal reveal-delay-1">
+      <div class="process-card-n">05</div>
+      <div class="process-card-name">Email marketing</div>
+      <p class="process-card-desc">Costruiamo sequenze email personalizzate per le diverse tipologie di pubblico: uno dei canali più efficaci per portare vendite ricorrenti.</p>
+    </div>
+    <div class="process-card reveal reveal-delay-2">
+      <div class="process-card-n">06</div>
+      <div class="process-card-name">Ottimizzazione data-driven</div>
+      <p class="process-card-desc">Analisi costante dei risultati per capire quali contenuti e campagne performano meglio e perché. Ogni euro lavora sempre più duramente.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     CONTATTI
+════════════════════════════════════ -->
+<section id="contatti">
+  <div class="section-label reveal">Parliamo</div>
+  <h2 class="section-title reveal reveal-delay-1">Inizia<br>adesso</h2>
+  <div class="contatti-inner">
+    <div class="reveal reveal-delay-1">
+      <p class="contatti-desc">Hai un progetto in mente? Raccontaci dove vuoi arrivare. Senza impegno, scopriamo insieme se siamo la scelta giusta per te.</p>
+      <div class="contact-detail">
+        <span class="contact-detail-label">Email</span>
+        <a href="mailto:info@lareol.com" class="contact-detail-val">info@lareol.com</a>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-detail-label">Telefono</span>
+        <a href="tel:+393442616716" class="contact-detail-val">+39 344 261 6716</a>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-detail-label">Instagram</span>
+        <a href="https://instagram.com/lareol_agency" target="_blank" class="contact-detail-val">@lareol_agency</a>
+      </div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <div class="form-group">
+        <label>Nome e cognome</label>
+        <input type="text" placeholder="Mario Rossi">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" placeholder="mario@azienda.it">
+      </div>
+      <div class="form-group">
+        <label>Messaggio</label>
+        <textarea placeholder="Raccontaci il tuo progetto..."></textarea>
+      </div>
+      <button class="form-submit">
+        <span>Invia la richiesta</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+     FOOTER
+════════════════════════════════════ -->
+<footer>
+  <div>
+    <div class="footer-logo">
+      <svg width="530" height="218" viewBox="0 0 530 218" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.4375 174V43.0909H43.9773V145.364H96.9034V174H8.4375ZM133.739 175.534C127.475 175.534 121.935 174.511 117.12 172.466C112.347 170.378 108.597 167.224 105.87 163.006C103.142 158.787 101.779 153.418 101.779 146.898C101.779 141.528 102.695 136.947 104.527 133.155C106.36 129.32 108.916 126.188 112.198 123.759C115.479 121.33 119.293 119.476 123.639 118.197C128.029 116.919 132.759 116.088 137.83 115.705C143.327 115.278 147.737 114.767 151.061 114.17C154.428 113.531 156.857 112.658 158.348 111.55C159.84 110.399 160.585 108.886 160.585 107.011V106.756C160.585 104.199 159.605 102.239 157.645 100.875C155.685 99.5114 153.171 98.8295 150.102 98.8295C146.736 98.8295 143.987 99.5753 141.857 101.067C139.769 102.516 138.512 104.753 138.085 107.778H105.614C106.04 101.812 107.936 96.3153 111.303 91.2869C114.712 86.2159 119.676 82.1676 126.196 79.142C132.716 76.0739 140.855 74.5398 150.614 74.5398C157.645 74.5398 163.952 75.3707 169.534 77.0327C175.117 78.652 179.868 80.9318 183.789 83.8722C187.709 86.7699 190.692 90.179 192.737 94.0994C194.825 97.9773 195.87 102.196 195.87 106.756V174H162.887V160.193H162.12C160.159 163.858 157.773 166.82 154.96 169.078C152.191 171.337 149.016 172.977 145.436 174C141.899 175.023 138 175.534 133.739 175.534ZM145.245 153.29C147.929 153.29 150.443 152.736 152.787 151.628C155.174 150.52 157.112 148.922 158.604 146.834C160.095 144.746 160.841 142.21 160.841 139.227V131.045C159.904 131.429 158.902 131.791 157.837 132.132C156.814 132.473 155.706 132.793 154.513 133.091C153.362 133.389 152.127 133.666 150.806 133.922C149.527 134.178 148.185 134.412 146.779 134.625C144.051 135.051 141.814 135.754 140.067 136.734C138.362 137.672 137.084 138.844 136.232 140.25C135.422 141.614 135.017 143.148 135.017 144.852C135.017 147.58 135.976 149.668 137.894 151.116C139.811 152.565 142.262 153.29 145.245 153.29ZM207.329 174V75.8182H241.59V94.483H242.613C244.402 87.5795 247.236 82.5298 251.114 79.3338C255.035 76.1378 259.615 74.5398 264.857 74.5398C266.391 74.5398 267.904 74.6676 269.395 74.9233C270.929 75.1364 272.4 75.456 273.806 75.8821V105.989C272.059 105.392 269.907 104.945 267.35 104.646C264.793 104.348 262.598 104.199 260.766 104.199C257.314 104.199 254.204 104.987 251.434 106.564C248.706 108.098 246.554 110.271 244.978 113.084C243.401 115.854 242.613 119.114 242.613 122.864V174H207.329ZM321.396 175.79C310.913 175.79 301.879 173.787 294.294 169.781C286.751 165.733 280.934 159.937 276.843 152.395C272.795 144.81 270.771 135.733 270.771 125.165C270.771 115.023 272.816 106.159 276.907 98.5739C280.998 90.9886 286.772 85.0866 294.23 80.8679C301.687 76.6491 310.487 74.5398 320.629 74.5398C328.044 74.5398 334.755 75.6903 340.764 77.9915C346.772 80.2926 351.907 83.6378 356.169 88.027C360.43 92.3736 363.711 97.6577 366.012 103.879C368.313 110.101 369.464 117.111 369.464 124.909V133.091H281.765V113.659H336.992C336.95 110.847 336.225 108.375 334.819 106.244C333.456 104.071 331.602 102.388 329.258 101.195C326.957 99.9588 324.336 99.3409 321.396 99.3409C318.541 99.3409 315.92 99.9588 313.534 101.195C311.147 102.388 309.23 104.05 307.781 106.18C306.375 108.311 305.629 110.804 305.544 113.659V134.625C305.544 137.778 306.204 140.591 307.525 143.062C308.846 145.534 310.742 147.473 313.214 148.879C315.686 150.286 318.669 150.989 322.163 150.989C324.592 150.989 326.808 150.648 328.811 149.966C330.856 149.284 332.603 148.304 334.052 147.026C335.501 145.705 336.566 144.128 337.248 142.295H369.464C368.356 149.114 365.735 155.037 361.602 160.065C357.468 165.051 351.992 168.929 345.174 171.699C338.399 174.426 330.473 175.79 321.396 175.79ZM425.763 175.79C415.11 175.79 405.991 173.68 398.405 169.462C390.82 165.2 385.003 159.277 380.955 151.692C376.907 144.064 374.883 135.222 374.883 125.165C374.883 115.108 376.907 106.287 380.955 98.7017C385.003 91.0739 390.82 85.1506 398.405 80.9318C405.991 76.6705 415.11 74.5398 425.763 74.5398C436.417 74.5398 445.536 76.6705 453.121 80.9318C460.706 85.1506 466.523 91.0739 470.572 98.7017C474.62 106.287 476.644 115.108 476.644 125.165C476.644 135.222 474.62 144.064 470.572 151.692C466.523 159.277 460.706 165.2 453.121 169.462C445.536 173.68 436.417 175.79 425.763 175.79ZM426.019 149.71C429.002 149.71 431.58 148.709 433.753 146.706C435.927 144.703 437.61 141.848 438.803 138.141C439.996 134.433 440.593 130.023 440.593 124.909C440.593 119.753 439.996 115.342 438.803 111.678C437.61 107.97 435.927 105.115 433.753 103.112C431.58 101.109 429.002 100.108 426.019 100.108C422.866 100.108 420.16 101.109 417.901 103.112C415.643 105.115 413.917 107.97 412.724 111.678C411.53 115.342 410.934 119.753 410.934 124.909C410.934 130.023 411.53 134.433 412.724 138.141C413.917 141.848 415.643 144.703 417.901 146.706C420.16 148.709 422.866 149.71 426.019 149.71ZM520.846 43.0909V174H485.562V43.0909H520.846Z" fill="rgba(255,255,255,0.32)"/>
+        <line x1="8.54102" y1="198.226" x2="272.447" y2="198.226" stroke="rgba(255,255,255,0.32)" stroke-width="8"/>
+        <line x1="256.932" y1="44.2263" x2="520.838" y2="44.2263" stroke="rgba(255,255,255,0.32)" stroke-width="8"/>
+      </svg>
+    </div>
+    <p class="footer-tagline">Soluzioni digitali complete per aziende che vogliono crescere online in modo misurabile.</p>
+  </div>
+  <div>
+    <div class="footer-col-title">Servizi</div>
+    <ul class="footer-links">
+      <li><a href="#">Social Media Marketing</a></li>
+      <li><a href="#">Google Ads e Meta Ads</a></li>
+      <li><a href="#">Produzione Video e Foto</a></li>
+      <li><a href="#">Siti Web</a></li>
+      <li><a href="#">Email Marketing</a></li>
+      <li><a href="#">Analisi Dati</a></li>
+    </ul>
+  </div>
+  <div>
+    <div class="footer-col-title">Contatti</div>
+    <ul class="footer-links">
+      <li><a href="mailto:info@lareol.com">info@lareol.com</a></li>
+      <li><a href="tel:+393442616716">+39 344 261 6716</a></li>
+    </ul>
+    <br>
+    <div class="footer-col-title">Seguici</div>
+    <ul class="footer-links">
+      <li><a href="https://instagram.com/lareol_agency" target="_blank">Instagram</a></li>
+      <li><a href="#">Facebook</a></li>
+      <li><a href="#">LinkedIn</a></li>
+    </ul>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">2026 Lareol. Tutti i diritti riservati</span>
+    <div class="footer-social">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Cookie Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── LOADER ── */
+  window.addEventListener('DOMContentLoaded', () => {
+    const loaderLogo = document.getElementById('loader-logo');
+    const loaderPanel = document.getElementById('loader-panel');
+    const loader = document.getElementById('loader');
+
+    // Show logo
+    setTimeout(() => { loaderLogo.classList.add('visible'); }, 200);
+
+    // Slide panel up
+    setTimeout(() => {
+      loaderPanel.classList.add('out');
+    }, 1100);
+
+    // Remove from DOM
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 2200);
+  });
+
+  /* ── CURSOR ── */
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    ring.style.left = e.clientX + 'px';
+    ring.style.top = e.clientY + 'px';
+  });
+
+  /* ── NAV SCROLL ── */
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  /* ── REVEAL ── */
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
